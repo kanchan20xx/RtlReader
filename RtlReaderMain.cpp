@@ -12,7 +12,7 @@ public:
         int bitDepath; //1ピクセル当たりのドット情報サイズ
     };
     virtual int Read(int heightToRead, unsigned char *data) = 0;
-    virtual RasterSizeInfo GetRasterSizeIno() = 0;
+    virtual RasterSizeInfo GetRasterSizeInfo() = 0;
     virtual ~IRtlReader() {}
 };
 
@@ -58,7 +58,7 @@ public:
         }
         return 0;
     }
-    virtual IRtlReader::RasterSizeInfo GetRasterSizeIno() override
+    virtual IRtlReader::RasterSizeInfo GetRasterSizeInfo() override
     {
         return sizeInfo_;
     }
@@ -73,27 +73,41 @@ class RtlComposer : public IRtlReader
 public:
     RtlComposer(const std::vector<IRtlReader*> &readers) : readers_{readers}
     {
+        Initialize();
     }
     virtual int Read(int heightToRead, unsigned char* data) override
     {
-        std::vector<unsigned char> totalBuf;
-        for(auto &reader : readers_) {
-            int bufSize = CalcBugSizeToReadRtl(reader->GetRasterSizeIno());
-            std::vector<unsigned char> bufPerLayer(bufSize);
-            reader->Read(1, bufPerLayer.data());
-            totalBuf.insert(totalBuf.end(), bufPerLayer.begin(), bufPerLayer.end());
-        }
-        for(int i = 0; i < totalBuf.size(); ++i) {
-            data[i] = totalBuf[i];
-        }
+        //for(int row = 0; row < heightToRead; ++row) {
+            std::vector<unsigned char> totalBuf;
+            for(auto &reader : readers_) {
+                int bufSize = CalcBugSizeToReadRtl(reader->GetRasterSizeInfo());
+                std::vector<unsigned char> bufPerLayer(bufSize);
+                reader->Read(1, bufPerLayer.data());
+                totalBuf.insert(totalBuf.end(), bufPerLayer.begin(), bufPerLayer.end());
+            }
+            for(int i = 0; i < totalBuf.size(); ++i) {
+                data[i] = totalBuf[i];
+            }
+        //}
         return 0;
     }
-    virtual IRtlReader::RasterSizeInfo GetRasterSizeIno() override
+    virtual IRtlReader::RasterSizeInfo GetRasterSizeInfo() override
     {
-        return readers_[0]->GetRasterSizeIno();
+        return sizeInfo_;
     }
 private:
     std::vector<IRtlReader*> readers_;
+    RasterSizeInfo sizeInfo_;
+    void Initialize()
+    {
+        sizeInfo_ = readers_[0]->GetRasterSizeInfo();
+        int totalCh = 0;
+        for(auto &elem : readers_) {
+            RasterSizeInfo info = elem->GetRasterSizeInfo();
+            totalCh += info.channels;
+        }
+        sizeInfo_.channels = totalCh;
+    }
 };
 
 
@@ -113,4 +127,6 @@ int main()
     //reader1.Read(1, dummy.data());
     std::copy(dummy.begin(),dummy.end(), std::ostream_iterator<unsigned char>(std::cout, ","));
     std::cout << std::endl;
+    auto info = composer.GetRasterSizeInfo();
+    std::cout << "ch:" << info.channels << ", width x height : " << info.width << " x " << info.height << ", bitdepth : " << info.bitDepath << std::endl;
 }
