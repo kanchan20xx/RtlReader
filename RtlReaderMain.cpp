@@ -18,7 +18,7 @@ public:
 
 namespace
 {
-int CalcBugSizeToReadRtl(const IRtlReader::RasterSizeInfo &sizeInfo)
+int CalcBufSizeToReadRtlPerLine(const IRtlReader::RasterSizeInfo &sizeInfo)
 {
     int byteSizePerLinePerChannnel = (sizeInfo.width * sizeInfo.bitDepath + 7 ) >> 3;
     return byteSizePerLinePerChannnel * sizeInfo.channels;
@@ -77,18 +77,19 @@ public:
     }
     virtual int Read(int heightToRead, unsigned char* data) override
     {
-        //for(int row = 0; row < heightToRead; ++row) {
+        int bufSize = CalcBufSizeToReadRtlPerLine(GetRasterSizeInfo());
+        for(int row = 0; row < heightToRead; ++row) {
             std::vector<unsigned char> totalBuf;
             for(auto &reader : readers_) {
-                int bufSize = CalcBugSizeToReadRtl(reader->GetRasterSizeInfo());
+                int bufSize = CalcBufSizeToReadRtlPerLine(reader->GetRasterSizeInfo());
                 std::vector<unsigned char> bufPerLayer(bufSize);
                 reader->Read(1, bufPerLayer.data());
                 totalBuf.insert(totalBuf.end(), bufPerLayer.begin(), bufPerLayer.end());
             }
             for(int i = 0; i < totalBuf.size(); ++i) {
-                data[i] = totalBuf[i];
+                data[row * bufSize + i] = totalBuf[i];
             }
-        //}
+        }
         return 0;
     }
     virtual IRtlReader::RasterSizeInfo GetRasterSizeInfo() override
@@ -122,11 +123,11 @@ int main()
     RtlReader reader1(5, 2, data);
     RtlReader reader2(5, 2, data);
     RtlComposer composer({&reader1, &reader2});
-    std::vector<unsigned char> dummy(20);
-    composer.Read(1, dummy.data());
+    std::vector<unsigned char> dummy(40);
+    composer.Read(2, dummy.data());
     //reader1.Read(1, dummy.data());
     std::copy(dummy.begin(),dummy.end(), std::ostream_iterator<unsigned char>(std::cout, ","));
     std::cout << std::endl;
     auto info = composer.GetRasterSizeInfo();
-    std::cout << "ch:" << info.channels << ", width x height : " << info.width << " x " << info.height << ", bitdepth : " << info.bitDepath << std::endl;
+    std::cout << "channel : " << info.channels << ", width x height : " << info.width << " x " << info.height << ", bitdepth : " << info.bitDepath << std::endl;
 }
