@@ -49,7 +49,8 @@ int main()
     data.push_back(ch1);
     std::vector<unsigned char> ch2 {0x04, 0x05};
     data.push_back(ch2);
-    RtlReader reader(1, 1, data);
-    unsigned char dummy;
-    reader.Read(1,&dummy);
+    RtlReader reader(5, 1, data);
+    std::vector<unsigned char> dummy(5);
+    reader.Read(1, dummy.data());
+    std::copy(dummy.begin(),dummy.end(), std::ostream_iterator<unsigned char>(std::cout, ","));
 }
