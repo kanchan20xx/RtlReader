@@ -23,15 +23,15 @@ public:
         for(int ch = 0; ch < dstData_.size(); ++ch) {
             outputData.insert(outputData.end(), dstData_[ch].begin(), dstData_[ch].end());
         }
-        // コンストラクタで与えられた幅に合わせて実データを描画する。
-        for(int i =0; i < drawWidth_; ++i) {
-            if(outputData.size() < i) {
-                //std::cout << 0x00 << std::endl;
-                data[i] = 0x00;
-                continue;
+        for(int row = 0; row < heightToRead; ++row) {
+            // コンストラクタで与えられた幅に合わせて実データを描画する。
+            for(int i =0; i < drawWidth_; ++i) {
+                if(outputData.size() < i) {
+                    data[i] = 0x00;
+                    continue;
+                }
+                data[row * drawWidth_ + i] = outputData[i];
             }
-            data[i] = outputData[i];
-            //std::cout << outputData[i] << std::endl;
         }
         return 0;
     }
@@ -49,8 +49,8 @@ int main()
     data.push_back(ch1);
     std::vector<unsigned char> ch2 {0x04, 0x05};
     data.push_back(ch2);
-    RtlReader reader(5, 1, data);
-    std::vector<unsigned char> dummy(5);
-    reader.Read(1, dummy.data());
+    RtlReader reader(5, 2, data);
+    std::vector<unsigned char> dummy(10);
+    reader.Read(2, dummy.data());
     std::copy(dummy.begin(),dummy.end(), std::ostream_iterator<unsigned char>(std::cout, ","));
 }
