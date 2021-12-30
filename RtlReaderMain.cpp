@@ -77,7 +77,7 @@ public:
     }
     virtual int Read(int heightToRead, unsigned char* data) override
     {
-        int bufSize = CalcBufSizeToReadRtlPerLine(GetRasterSizeInfo());
+        int bufSizePerLine = CalcBufSizeToReadRtlPerLine(GetRasterSizeInfo());
         for(int row = 0; row < heightToRead; ++row) {
             std::vector<unsigned char> totalBuf;
             for(auto &reader : readers_) {
@@ -87,7 +87,7 @@ public:
                 totalBuf.insert(totalBuf.end(), bufPerLayer.begin(), bufPerLayer.end());
             }
             for(int i = 0; i < totalBuf.size(); ++i) {
-                data[row * bufSize + i] = totalBuf[i];
+                data[row * bufSizePerLine + i] = totalBuf[i];
             }
         }
         return 0;
@@ -114,7 +114,6 @@ private:
 
 int main()
 {
-    // width * bitdepth + 7 >> 3 -> 1行あたりに必要なバイト数
     std::vector<std::vector<unsigned char>> data;
     std::vector<unsigned char> ch1 {0x01, 0x02};
     data.push_back(ch1);
@@ -125,7 +124,6 @@ int main()
     RtlComposer composer({&reader1, &reader2});
     std::vector<unsigned char> dummy(40);
     composer.Read(2, dummy.data());
-    //reader1.Read(1, dummy.data());
     std::copy(dummy.begin(),dummy.end(), std::ostream_iterator<unsigned char>(std::cout, ","));
     std::cout << std::endl;
     auto info = composer.GetRasterSizeInfo();
